@@ -70,20 +70,6 @@ if USE_WV:
 lock_dicts()
 UNKTOKEN = VOCDICT.getid(UNK)
 
-input_dir = "./out-targets/"
-output_dir = "./out-frames/"
-
-pairs = []
-for root, dirs, files in os.walk(input_dir):
-    path = root.split(os.sep)
-    # print((len(path) - 1) * '-', os.path.basename(root))
-    for file_name in files:
-        # print(len(path) * '-', file)
-        # print(root, dirs, files)
-        rindex = root.rfind('/')
-        label = root[rindex + 1:]
-        # print(label, file_name)
-        pairs.append((label, file_name))
 
 if options.mode in ["train", "refresh"]:
     devexamples, m, t = read_conll(DEV_CONLL)
@@ -93,28 +79,11 @@ elif options.mode  == "test":
     devexamples, m, t = read_conll(TEST_CONLL)
     find_multitokentargets(devexamples, "dev/test")
     out_conll_file = "{}predicted-{}-frameid-test.conll".format(model_dir, VERSION)
-    # out_conll_file = "/tmp/predicted-{}-frameid-test.conll".format(VERSION)
     fefile = "{}predicted-{}-frameid-test.fes".format(model_dir, VERSION)
-    # fefile = "/tmp/predicted-{}-frameid-test.fes".format(VERSION)
 elif options.mode == "predict":
-    # assert options.raw_input is not None
-    # instances, _, _ = read_conll(options.raw_input)
+    assert options.raw_input is not None
+    instances, _, _ = read_conll(options.raw_input)
     out_conll_file = "{}predicted-frames.conll".format(model_dir)
-    
-    all_instances = []
-    print("loading files...")
-    for file_num, (label, file_name) in enumerate(pairs):
-        print("Parsing " + str(file_num) + " of " + str(len(pairs)))
-        full_name = input_dir + label + "/" + file_name
-        instances, _, _ = read_conll(full_name)
-        all_instances.append((label, file_name, instances))
-        # assert options.raw_input is not None
-        # with open(options.raw_input, "r") as fin:
-        # with open(full_name, "r") as fin:
-        #     instances = [make_data_instance(line.decode("latin-1"), i) for i,line in enumerate(fin)]
-        #     all_instances.append((label, file_name, instances))
-
-    # out_conll_file = "/tmp/predicted-frames.conll"
 else:
     raise Exception("Invalid parser mode", options.mode)
 
@@ -285,21 +254,12 @@ def identify_frames(builders, tokens, postags, lexunit, targetpositions, goldfra
     objective = -esum(losses) if losses else None
     return objective, prediction
 
-def print_as_conll(gold_examples, pred_targmaps):
-    print_as_conll_dest(out_conll_file, gold_examples, pred_targmaps)
-
-def print_as_conll_dest(destination, gold_examples, pred_targmaps):
-    """
-    Creates a CoNLL object with predicted target and lexical unit.
-    Spits out one CoNLL for each LU.
-    """
-    with codecs.open(destination, "w", "utf-8") as f:
-        for g,p in zip(gold_examples, pred_targmaps):
+def print_as_conll(goldexamples, pred_targmaps):
+    with codecs.open(out_conll_file, "w", "utf-8") as f:
+        for g,p in zip(goldexamples, pred_targmaps):
             result = g.get_predicted_frame_conll(p) + "\n"
             f.write(result)
         f.close()
-
-
 
 
 best_dev_f1 = 0.0
@@ -380,7 +340,6 @@ elif options.mode == "test":
     sn = devexamples[0].sent_num
     sl = [0.0,0.0,0.0]
     logger = open("{}/frameid-prediction-analysis.log".format(model_dir), "w")
-    # logger = open("/tmp/frameid-prediction-analysis.log", "w")
     logger.write("Sent#%d :\n" % sn)
     devexamples[0].print_internal_sent(logger)
 
@@ -447,20 +406,10 @@ elif options.mode == "predict":
     sys.stderr.write("Loading model from {} ...\n".format(model_file_name))
     model.populate(model_file_name)
 
-    for i, (label, file_name, instances) in enumerate(all_instances):
-        predictions = []
-        output_loc = output_dir + label + "/" + file_name + ".pred"
-        if not os.path.exists(output_dir + label + "/"):
-            try:
-                os.makedirs(output_dir + label + "/")
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
-        for instance in instances:
-            # print(instance)
-            _, prediction = identify_frames(builders, instance.tokens, instance.postags, instance.lu, instance.targetframedict.keys())
-            predictions.append(prediction)
-        sys.stderr.write("Printing output in CoNLL format to {}\n".format(output_loc))
-        print_as_conll_dest(output_loc, instances, predictions)
-        # break
+    predictions = []
+    for instance in instances:
+        _, prediction = identify_frames(builders, instance.tokens, instance.postags, instance.lu, instance.targetframedict.keys())
+        predictions.append(prediction)
+    sys.stderr.write("Printing output in CoNLL format to {}\n".format(out_conll_file))
+    print_as_conll(instances, predictions)
     sys.stderr.write("Done!\n")

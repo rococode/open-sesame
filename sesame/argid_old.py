@@ -92,19 +92,6 @@ UNKTOKEN = VOCDICT.getid(UNK)
 NOTANLU = LUDICT.getid(EMPTY_LABEL)
 NOTANFEID = FEDICT.getid(EMPTY_FE)  # O in CoNLL format.
 
-input_dir = "./out-frames/"
-output_dir = "./out-args/"
-pairs = []
-for root, dirs, files in os.walk(input_dir):
-    path = root.split(os.sep)
-    # print((len(path) - 1) * '-', os.path.basename(root))
-    for file_name in files:
-        # print(len(path) * '-', file)
-        # print(root, dirs, files)
-        rindex = root.rfind('/')
-        label = root[rindex + 1:]
-        # print(label, file_name)
-        pairs.append((label, file_name))
 
 if options.mode in ["train", "refresh"]:
     devexamples, _, _ = read_conll(DEV_CONLL, options.syn)
@@ -118,18 +105,9 @@ elif options.mode in ["test", "ensemble"]:
     if options.mode == "ensemble":
         in_ens_file = "{}full-ensemble-{}".format(model_dir, out_conll_file.split("/")[-1][:-11])
 elif options.mode == "predict":
-    # assert options.raw_input is not None
-    # instances, _, _ = read_conll(options.raw_input)
+    assert options.raw_input is not None
+    instances, _, _ = read_conll(options.raw_input)
     out_conll_file = "{}predicted-args.conll".format(model_dir)
-
-    all_instances = []
-    print("loading files...")
-    for file_num, (label, file_name) in enumerate(pairs):
-        print("Parsing " + str(file_num) + " of " + str(len(pairs)))
-        full_name = input_dir + label + "/" + file_name
-        instances, _, _ = read_conll(full_name)
-        all_instances.append((label, file_name, instances))
-        # break
 else:
     raise Exception("Invalid parser mode", options.mode)
 
@@ -871,10 +849,7 @@ def identify_spans(unkdtoks, sentence, goldspans):
 
 
 def print_as_conll(golds, pred_targmaps):
-    print_as_conll_dest(out_conll_file, golds, pred_targmaps)
-
-def print_as_conll_dest(destination, golds, pred_targmaps):
-    with codecs.open(destination, "w", "utf-8") as f:
+    with codecs.open(out_conll_file, "w", "utf-8") as f:
         for gold, pred in zip(golds, pred_targmaps):
             result = gold.get_str(predictedfes=pred)
             f.write(result + "\n")
@@ -1062,22 +1037,12 @@ elif options.mode == "test":
     logger.close()
 
 elif options.mode == "predict":
-    for i, (label, file_name, instances) in enumerate(all_instances):
-        output_loc = output_dir + label + "/" + file_name
-        if not os.path.exists(output_dir + label + "/"):
-            try:
-                os.makedirs(output_dir + label + "/")
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
-        predictions = []
-        for instance in instances:
-            prediction = identify_fes(instance.tokens,
-                                      instance.sentence,
-                                      instance.targetframedict)
-            predictions.append(prediction)
-        print("Doing", output_loc)
-        print_as_conll_dest(output_loc, instances, predictions)
-        # break
-    # sys.stderr.write("Printing output in CoNLL format to {}\n".format(out_conll_file))
+    predictions = []
+    for instance in instances:
+        prediction = identify_fes(instance.tokens,
+                                  instance.sentence,
+                                  instance.targetframedict)
+        predictions.append(prediction)
+    sys.stderr.write("Printing output in CoNLL format to {}\n".format(out_conll_file))
+    print_as_conll(instances, predictions)
     sys.stderr.write("Done!\n")

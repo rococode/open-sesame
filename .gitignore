@@ -114,3 +114,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+out-args/
+out-frames/
+out-targets/

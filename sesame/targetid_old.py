@@ -10,10 +10,6 @@ from evaluation import *
 from raw_data import make_data_instance
 from semafor_evaluation import convert_conll_to_frame_elements
 
-import sys
-# sys.setdefaultencoding() does not exist, here!
-reload(sys)  # Reload does the trick!
-sys.setdefaultencoding('latin-1')
 
 optpr = OptionParser()
 optpr.add_option("--mode", dest="mode", type="choice",
@@ -23,7 +19,7 @@ optpr.add_option("--raw_input", type="str", metavar="FILE")
 optpr.add_option("--config", type="str", metavar="FILE")
 (options, args) = optpr.parse_args()
 
-model_dir = "./logs/{}/".format(options.model_name)
+model_dir = "logs/{}/".format(options.model_name)
 model_file_name = "{}best-targetid-{}-model".format(model_dir, VERSION)
 if not os.path.exists(model_dir):
     os.makedirs(model_dir)
@@ -77,28 +73,6 @@ PRETRAINED_DIM = len(pretrained_map.values()[0])
 lock_dicts()
 UNKTOKEN = VOCDICT.getid(UNK)
 
-input_dir = os.path.expanduser("~") + "/20newsgroups-extractor/out/"
-output_dir = "./out-targets/"
-
-if not os.path.exists(os.path.dirname(output_dir)):
-    try:
-        os.makedirs(os.path.dirname(output_dir))
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
-
-pairs = []
-for root, dirs, files in os.walk(input_dir):
-    path = root.split(os.sep)
-    # print((len(path) - 1) * '-', os.path.basename(root))
-    for file_name in files:
-        # print(len(path) * '-', file)
-        # print(root, dirs, files)
-        rindex = root.rfind('/')
-        label = root[rindex + 1:]
-        # print(label, file_name)
-        pairs.append((label, file_name))
-
 if options.mode in ["train", "refresh"]:
     dev_examples, _, _ = read_conll(DEV_CONLL)
     combined_dev = combine_examples(dev_examples)
@@ -107,21 +81,11 @@ elif options.mode  == "test":
     dev_examples, m, t = read_conll(TEST_CONLL)
     combined_dev = combine_examples(dev_examples)
     out_conll_file = "{}predicted-{}-targetid-test.conll".format(model_dir, VERSION)
-    # out_conll_file = "/tmp/predicted-{}-targetid-test.conll".format(VERSION)
 elif options.mode == "predict":
-    all_instances = []
-    print("loading files...")
-    for file_num, (label, file_name) in enumerate(pairs):
-        print("Parsing " + str(file_num) + " of " + str(len(pairs)))
-        full_name = input_dir + label + "/" + file_name
-        # assert options.raw_input is not None
-        # with open(options.raw_input, "r") as fin:
-        with open(full_name, "r") as fin:
-            instances = [make_data_instance(line.decode("latin-1"), i) for i,line in enumerate(fin)]
-            all_instances.append((label, file_name, instances))
-    print("finished loading!")
+    assert options.raw_input is not None
+    with open(options.raw_input, "r") as fin:
+        instances = [make_data_instance(line, i) for i,line in enumerate(fin)]
     out_conll_file = "{}predicted-targets.conll".format(model_dir)
-    # out_conll_file = "/tmp/predicted-targets.conll"
 else:
     raise Exception("Invalid parser mode", options.mode)
 
@@ -346,14 +310,11 @@ def identify_targets(builders, tokens, postags, lemmas, gold_targets=None):
 
 
 def print_as_conll(gold_examples, predicted_target_dict):
-    print_as_conll_dest(out_conll_file, gold_examples, predicted_target_dict)
-
-def print_as_conll_dest(destination, gold_examples, predicted_target_dict):
     """
     Creates a CoNLL object with predicted target and lexical unit.
     Spits out one CoNLL for each LU.
     """
-    with codecs.open(destination, "w", "utf-8") as conll_file:
+    with codecs.open(out_conll_file, "w", "utf-8") as conll_file:
         for gold, pred in zip(gold_examples, predicted_target_dict):
             for target in sorted(pred):
                 result = gold.get_predicted_target_conll(target, pred[target][0]) + "\n"
@@ -469,20 +430,10 @@ elif options.mode == "predict":
     sys.stderr.write("Reading model from {} ...\n".format(model_file_name))
     model.populate(model_file_name)
 
-    for i, (label, file_name, instances) in enumerate(all_instances):
-        print("Extracting targets on #" + str(i)) 
-        predictions = []
-        # all_instances.append((label, file_name, instances))
-        output_loc = output_dir + label + "/" + file_name + ".pred"
-        if not os.path.exists(output_dir + label + "/"):
-            try:
-                os.makedirs(output_dir + label + "/")
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
-        for instance in instances:
-            _, prediction = identify_targets(builders, instance.tokens, instance.postags, instance.lemmas)
-            predictions.append(prediction)
-        sys.stderr.write("Printing output in CoNLL format to {}\n".format(output_loc))
-        print_as_conll_dest(output_loc, instances, predictions)
+    predictions = []
+    for instance in instances:
+        _, prediction = identify_targets(builders, instance.tokens, instance.postags, instance.lemmas)
+        predictions.append(prediction)
+    sys.stderr.write("Printing output in CoNLL format to {}\n".format(out_conll_file))
+    print_as_conll(instances, predictions)
     sys.stderr.write("Done!\n")
