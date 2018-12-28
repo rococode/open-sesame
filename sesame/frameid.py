@@ -4,6 +4,7 @@ import os
 import sys
 import time
 from optparse import OptionParser
+from tqdm import tqdm
 
 from dynet import *
 from evaluation import *
@@ -70,8 +71,12 @@ if USE_WV:
 lock_dicts()
 UNKTOKEN = VOCDICT.getid(UNK)
 
-input_dir = "./out-targets/"
-output_dir = "./out-frames/"
+# input_dir = "./out-targets/"
+# output_dir = "./out-frames/"
+# input_dir = "./out/imdb-targets-train/neg/"
+# output_dir = "./out/imdb-frames-train/neg/"
+input_dir = "./custom/targets/"
+output_dir = "./custom/frames/"
 
 pairs = []
 for root, dirs, files in os.walk(input_dir):
@@ -359,10 +364,12 @@ if options.mode in ["train", "refresh"]:
                     with open(os.path.join(model_dir, "best-dev-f1.txt"), "w") as fout:
                         fout.write("{}\n".format(best_dev_f1))
                         fout.close()
-
                     print_as_conll(devexamples, predictions)
-                    sys.stderr.write(" -- saving to {}".format(model_file_name))
-                    model.save(model_file_name)
+                    if devf < 0.88:
+                        sys.stderr.write(" -- not yet good enough to save (looking for 0.88)")
+                    else:
+                        sys.stderr.write(" -- saving to {}".format(model_file_name))
+                        model.save(model_file_name)
                     last_updated_epoch = epoch
                 sys.stderr.write("\n")
         if epoch - last_updated_epoch > PATIENCE:
@@ -447,9 +454,10 @@ elif options.mode == "predict":
     sys.stderr.write("Loading model from {} ...\n".format(model_file_name))
     model.populate(model_file_name)
 
-    for i, (label, file_name, instances) in enumerate(all_instances):
+    t = tqdm(all_instances)
+    for i, (label, file_name, instances) in enumerate(t):
         predictions = []
-        output_loc = output_dir + label + "/" + file_name + ".pred"
+        output_loc = output_dir + label + "/" + file_name
         if not os.path.exists(output_dir + label + "/"):
             try:
                 os.makedirs(output_dir + label + "/")
@@ -460,7 +468,9 @@ elif options.mode == "predict":
             # print(instance)
             _, prediction = identify_frames(builders, instance.tokens, instance.postags, instance.lu, instance.targetframedict.keys())
             predictions.append(prediction)
-        sys.stderr.write("Printing output in CoNLL format to {}\n".format(output_loc))
+        # sys.stderr.write("Printing output in CoNLL format to {}\n".format(output_loc))
+        t.set_description(output_loc)
+        t.refresh()
         print_as_conll_dest(output_loc, instances, predictions)
         # break
     sys.stderr.write("Done!\n")

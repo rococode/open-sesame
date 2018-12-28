@@ -92,8 +92,9 @@ UNKTOKEN = VOCDICT.getid(UNK)
 NOTANLU = LUDICT.getid(EMPTY_LABEL)
 NOTANFEID = FEDICT.getid(EMPTY_FE)  # O in CoNLL format.
 
-input_dir = "./out-frames/"
-output_dir = "./out-args/"
+input_dir = "./custom/frames/"
+output_dir = "./custom/args/"
+
 pairs = []
 for root, dirs, files in os.walk(input_dir):
     path = root.split(os.sep)

@@ -77,8 +77,12 @@ PRETRAINED_DIM = len(pretrained_map.values()[0])
 lock_dicts()
 UNKTOKEN = VOCDICT.getid(UNK)
 
-input_dir = os.path.expanduser("~") + "/20newsgroups-extractor/out/"
-output_dir = "./out-targets/"
+# input_dir = os.path.expanduser("~") + "/20newsgroups-extractor/out/"
+# output_dir = "./out-targets/"
+# input_dir = "/mnt/c/Users/rococo/Desktop/code/scholar/data/imdb/out_imdb_train/"
+# output_dir = "./out/imdb-targets-train/"
+input_dir = "./inputs/"
+output_dir = "./custom/targets/"
 
 if not os.path.exists(os.path.dirname(output_dir)):
     try:
@@ -473,7 +477,7 @@ elif options.mode == "predict":
         print("Extracting targets on #" + str(i)) 
         predictions = []
         # all_instances.append((label, file_name, instances))
-        output_loc = output_dir + label + "/" + file_name + ".pred"
+        output_loc = output_dir + label + "/" + file_name
         if not os.path.exists(output_dir + label + "/"):
             try:
                 os.makedirs(output_dir + label + "/")
