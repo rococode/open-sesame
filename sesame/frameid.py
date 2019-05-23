@@ -75,8 +75,10 @@ UNKTOKEN = VOCDICT.getid(UNK)
 # output_dir = "./out-frames/"
 # input_dir = "./out/imdb-targets-train/neg/"
 # output_dir = "./out/imdb-frames-train/neg/"
-input_dir = "./custom/targets/"
-output_dir = "./custom/frames/"
+# input_dir = "./custom/targets/"
+# output_dir = "./custom/frames/"
+input_dir = "./out/test/"
+output_dir = "./out/test-frame/"
 
 pairs = []
 for root, dirs, files in os.walk(input_dir):
