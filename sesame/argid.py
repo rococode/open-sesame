@@ -127,12 +127,13 @@ elif options.mode == "predict":
 
     all_instances = []
     print("loading files...")
-    for file_num, (label, file_name) in enumerate(pairs):
-        print("Parsing " + str(file_num) + " of " + str(len(pairs)))
-        full_name = input_dir + label + "/" + file_name
-        instances, _, _ = read_conll(full_name)
-        all_instances.append((label, file_name, instances))
-        # break
+    #for file_num, (label, file_name) in enumerate(pairs):
+    #    print("Parsing " + str(file_num) + " of " + str(len(pairs)))
+    #    full_name = input_dir + label + "/" + file_name
+    #    instances, _, _ = read_conll(full_name)
+    #    all_instances.append((label, file_name, instances))
+    #    # break
+    print("done loading")
 else:
     raise Exception("Invalid parser mode", options.mode)
 

@@ -29,6 +29,7 @@ def read_conll(conll_file, syn_type=None):
     totalexamples = 0.0
 
     next_ex = 0
+    #with codecs.open(conll_file, "r", "latin-1") as cf:
     with codecs.open(conll_file, "r", "utf-8") as cf:
         snum = -1
         for l in cf:

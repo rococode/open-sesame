@@ -6,6 +6,7 @@ dataanalysis.py
 *.frame.elements
 model.*
 logs/
+logs*/
 *.txt
 *tmp
 *err

@@ -11,6 +11,11 @@ from evaluation import *
 from raw_data import make_data_instance
 from semafor_evaluation import convert_conll_to_frame_elements
 
+# import sys
+# sys.setdefaultencoding() does not exist, here!
+# reload(sys)  # Reload does the trick!
+# sys.setdefaultencoding('latin-1')
+
 
 optpr = OptionParser()
 optpr.add_option("--mode", dest="mode", type="choice", choices=["train", "test", "refresh", "predict"], default="train")
@@ -77,8 +82,8 @@ UNKTOKEN = VOCDICT.getid(UNK)
 # output_dir = "./out/imdb-frames-train/neg/"
 # input_dir = "./custom/targets/"
 # output_dir = "./custom/frames/"
-input_dir = "./out/test/"
-output_dir = "./out/test-frame/"
+input_dir = "./unsup/targets/9/"
+output_dir = "./unsup/frames/9/"
 
 pairs = []
 for root, dirs, files in os.walk(input_dir):
@@ -110,6 +115,10 @@ elif options.mode == "predict":
     
     all_instances = []
     print("loading files...")
+    #import sys
+    # sys.setdefaultencoding() does not exist, here!
+    #reload(sys)  # Reload does the trick!
+    #sys.setdefaultencoding('latin-1')
     for file_num, (label, file_name) in enumerate(pairs):
         print("Parsing " + str(file_num) + " of " + str(len(pairs)))
         full_name = input_dir + label + "/" + file_name

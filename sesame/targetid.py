@@ -10,10 +10,12 @@ from evaluation import *
 from raw_data import make_data_instance
 from semafor_evaluation import convert_conll_to_frame_elements
 
-import sys
+from tqdm import tqdm
+
+# import sys
 # sys.setdefaultencoding() does not exist, here!
-reload(sys)  # Reload does the trick!
-sys.setdefaultencoding('latin-1')
+# reload(sys)  # Reload does the trick!
+# sys.setdefaultencoding('latin-1')
 
 optpr = OptionParser()
 optpr.add_option("--mode", dest="mode", type="choice",
@@ -81,8 +83,8 @@ UNKTOKEN = VOCDICT.getid(UNK)
 # output_dir = "./out-targets/"
 # input_dir = "/mnt/c/Users/rococo/Desktop/code/scholar/data/imdb/out_imdb_train/"
 # output_dir = "./out/imdb-targets-train/"
-input_dir = "./inputs/"
-output_dir = "./custom/targets/"
+input_dir = "./unsup/split/10/"
+output_dir = "./unsup/targets/10/"
 
 if not os.path.exists(os.path.dirname(output_dir)):
     try:
@@ -115,13 +117,22 @@ elif options.mode  == "test":
 elif options.mode == "predict":
     all_instances = []
     print("loading files...")
-    for file_num, (label, file_name) in enumerate(pairs):
-        print("Parsing " + str(file_num) + " of " + str(len(pairs)))
+    for file_num, (label, file_name) in tqdm(enumerate(pairs)):
+        #print("Parsing " + str(file_num) + " of " + str(len(pairs)) + " (file name: " + file_name + ")")
         full_name = input_dir + label + "/" + file_name
         # assert options.raw_input is not None
         # with open(options.raw_input, "r") as fin:
         with open(full_name, "r") as fin:
-            instances = [make_data_instance(line.decode("latin-1"), i) for i,line in enumerate(fin)]
+            instances = []
+            # for i, line in enumerate(fin):
+            #     print("line: ", line, type(line))
+            #     decline = line.decode("latin-1")
+            #     print("decline: ", decline, type(decline))
+            #     encline = decline.encode("ascii")
+            #     print("encline: ", encline, type(encline))
+            #     res = make_data_instance(encline, i)
+            #     instances.append(res)
+            instances = [make_data_instance(line, i) for i,line in enumerate(fin)]
             all_instances.append((label, file_name, instances))
     print("finished loading!")
     out_conll_file = "{}predicted-targets.conll".format(model_dir)
@@ -473,8 +484,8 @@ elif options.mode == "predict":
     sys.stderr.write("Reading model from {} ...\n".format(model_file_name))
     model.populate(model_file_name)
 
-    for i, (label, file_name, instances) in enumerate(all_instances):
-        print("Extracting targets on #" + str(i)) 
+    for i, (label, file_name, instances) in tqdm(enumerate(all_instances)):
+        #print("Extracting targets on #" + str(i)) 
         predictions = []
         # all_instances.append((label, file_name, instances))
         output_loc = output_dir + label + "/" + file_name
@@ -487,6 +498,6 @@ elif options.mode == "predict":
         for instance in instances:
             _, prediction = identify_targets(builders, instance.tokens, instance.postags, instance.lemmas)
             predictions.append(prediction)
-        sys.stderr.write("Printing output in CoNLL format to {}\n".format(output_loc))
+        #sys.stderr.write("Printing output in CoNLL format to {}\n".format(output_loc))
         print_as_conll_dest(output_loc, instances, predictions)
     sys.stderr.write("Done!\n")
